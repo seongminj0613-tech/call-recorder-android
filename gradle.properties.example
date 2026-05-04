@@ -1,0 +1,12 @@
+org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+android.useAndroidX=true
+kotlin.code.style=official
+android.nonTransitiveRClass=true
+
+# Kakao Native App Key
+# 카카오 디벨로퍼 콘솔(https://developers.kakao.com)에서 발급
+KAKAO_NATIVE_APP_KEY=YOUR_KAKAO_NATIVE_APP_KEY_HERE
+
+# API Base URL
+# 백엔드 API Gateway URL
+API_BASE_URL=https://YOUR_API_GATEWAY_URL/
