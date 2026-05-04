@@ -1,11 +1,12 @@
 package com.callrecorder.app.data.repository
 
-import android.util.Log
+
 import com.callrecorder.app.data.api.ApiService
 import com.callrecorder.app.data.local.RecordingDao
 import com.callrecorder.app.data.local.RecordingEntity
 import com.callrecorder.app.data.local.RecordingStatus
 import com.callrecorder.app.data.model.*
+import com.callrecorder.app.util.SafeLog
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
@@ -84,7 +85,7 @@ class CallRepository(
         // 3) STT/요약 처리 트리거
         val procResp = api.processCall(urlResp.callId)
         if (!procResp.isSuccessful) {
-            Log.w("CallRepo", "process trigger failed: ${procResp.code()}")
+            SafeLog.w("CallRepo", "process trigger failed: ${procResp.code()}")
             // 실패해도 업로드는 됐으므로 PROCESSING 으로만 마킹
         }
         dao.updateStatus(rec.id, RecordingStatus.PROCESSING)

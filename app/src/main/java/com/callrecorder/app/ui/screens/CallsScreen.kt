@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.callrecorder.app.data.local.CallCategory
 import com.callrecorder.app.data.local.RecordingEntity
 import com.callrecorder.app.data.local.RecordingStatus
 import com.callrecorder.app.data.model.Call
@@ -28,12 +29,16 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CallsScreen(
-    onCallClick: (String) -> Unit,    // Long → String
+    onCallClick: (String) -> Unit,
     onSettings: () -> Unit,
     vm: CallsViewModel = viewModel(),
 ) {
     val state by vm.state.collectAsState()
-    val locals by vm.localRecordings.collectAsState()
+    val selectedCategory by vm.selectedCategory.collectAsState()
+    val categorized by vm.categorizedRecordings.collectAsState()
+    val unclassifiedCount by vm.unclassifiedCount.collectAsState()
+    val businessCount by vm.businessCount.collectAsState()
+    val personalCount by vm.personalCount.collectAsState()
 
     Scaffold(
         topBar = {
@@ -46,41 +51,97 @@ fun CallsScreen(
             )
         },
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            // 업로드 진행 중인 로컬 녹음 (최상단)
-            val active = locals.filter { it.status in setOf(
-                RecordingStatus.PENDING, RecordingStatus.UPLOADING,
-                RecordingStatus.UPLOADED, RecordingStatus.PROCESSING,
-                RecordingStatus.FAILED,
-            ) }
-            if (active.isNotEmpty()) {
-                item {
-                    SectionHeader("처리 중", "${active.size}건")
-                }
-                items(active, key = { "local-${it.id}" }) { LocalRow(it) }
-                item { Spacer(Modifier.height(8.dp)) }
-            }
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
 
-            // 서버에서 받은 완료된 통화
-            item { SectionHeader("최근 통화", if (state.calls.isEmpty()) "" else "${state.calls.size}건") }
+            // ===== 카테고리 탭 =====
+            CategoryTabs(
+                selected = selectedCategory,
+                unclassifiedCount = unclassifiedCount,
+                businessCount = businessCount,
+                personalCount = personalCount,
+                onSelect = vm::selectCategory,
+            )
 
-            if (state.loading && state.calls.isEmpty()) {
-                item {
-                    Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                // ===== 카테고리별 로컬 녹음 =====
+                if (categorized.isEmpty()) {
+                    item { CategoryEmptyState(selectedCategory) }
+                } else {
+                    items(categorized, key = { "cat-${it.id}" }) { rec ->
+                        ClassifiableRow(
+                            rec = rec,
+                            onClassify = { cat -> vm.classifyAs(rec.id, cat) },
+                        )
                     }
                 }
-            } else if (state.calls.isEmpty()) {
-                item { EmptyState() }
-            } else {
-                items(state.calls, key = { it.id }) {
-                    CallRow(it, onClick = { onCallClick(it.id) })
+
+                // ===== 서버 완료 통화 (BUSINESS 탭일 때만) =====
+                if (selectedCategory == CallCategory.BUSINESS) {
+                    item { Spacer(Modifier.height(8.dp)) }
+                    item {
+                        SectionHeader("최근 분석 완료", if (state.calls.isEmpty()) "" else "${state.calls.size}건")
+                    }
+                    if (state.loading && state.calls.isEmpty()) {
+                        item {
+                            Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
+                            }
+                        }
+                    } else {
+                        items(state.calls, key = { it.id }) {
+                            CallRow(it, onClick = { onCallClick(it.id) })
+                        }
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CategoryTabs(
+    selected: String,
+    unclassifiedCount: Int,
+    businessCount: Int,
+    personalCount: Int,
+    onSelect: (String) -> Unit,
+) {
+    val tabs = listOf(
+        Triple(CallCategory.UNCLASSIFIED, "미분류", unclassifiedCount),
+        Triple(CallCategory.BUSINESS, "업무", businessCount),
+        Triple(CallCategory.PERSONAL, "개인", personalCount),
+    )
+    val selectedIndex = tabs.indexOfFirst { it.first == selected }.coerceAtLeast(0)
+
+    TabRow(selectedTabIndex = selectedIndex) {
+        tabs.forEach { (cat, label, count) ->
+            Tab(
+                selected = selected == cat,
+                onClick = { onSelect(cat) },
+                text = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(label)
+                        if (count > 0) {
+                            Spacer(Modifier.width(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.18f),
+                            ) {
+                                Text(
+                                    "$count",
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontSize = 11.sp,
+                                )
+                            }
+                        }
+                    }
+                },
+            )
         }
     }
 }
@@ -99,71 +160,151 @@ private fun SectionHeader(title: String, hint: String) {
 }
 
 @Composable
-private fun EmptyState() {
+private fun CategoryEmptyState(category: String) {
+    val (emoji, msg) = when (category) {
+        CallCategory.UNCLASSIFIED -> "✅" to "분류할 통화가 없어요"
+        CallCategory.BUSINESS -> "💼" to "업무 통화가 없어요\n미분류에서 업무로 분류해주세요"
+        CallCategory.PERSONAL -> "👤" to "개인 통화가 없어요"
+        else -> "📞" to "통화가 없어요"
+    }
     Column(
         Modifier.fillMaxWidth().padding(vertical = 60.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("☎️", fontSize = 56.sp)
+        Text(emoji, fontSize = 48.sp)
         Spacer(Modifier.height(12.dp))
-        Text("아직 처리된 통화가 없어요", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(4.dp))
         Text(
-            "통화가 끝나면 자동으로 여기에 정리됩니다",
+            msg,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
 
+/**
+ * 마스킹 정책:
+ * - UNCLASSIFIED: 발신자명/파일명을 *** 처리 (개인정보 보호)
+ * - BUSINESS: 원본 표시 (업무 통화로 분류됨)
+ * - PERSONAL: 발신자명 마스킹 (개인정보 노출 차단)
+ */
+private fun displayName(rec: RecordingEntity): String {
+    return when (rec.category) {
+        CallCategory.BUSINESS -> rec.counterpartNumber ?: rec.fileName
+        CallCategory.PERSONAL, CallCategory.UNCLASSIFIED -> {
+            // 시간 정보만 살리고 발신자명은 가림
+            val datePart = Regex("""_(\d{6,})_(\d{6})""").find(rec.fileName)?.value ?: ""
+            "통화 녹음 ***$datePart"
+        }
+        else -> "통화 녹음 ***"
+    }
+}
+
 @Composable
-private fun LocalRow(rec: RecordingEntity) {
-    val (label, color) = when (rec.status) {
+private fun ClassifiableRow(
+    rec: RecordingEntity,
+    onClassify: (String) -> Unit,
+) {
+    val (statusLabel, statusColor) = when (rec.status) {
         RecordingStatus.PENDING -> "대기 중" to Color(0xFF8C8C8C)
         RecordingStatus.UPLOADING -> "업로드 중…" to MaterialTheme.colorScheme.primary
         RecordingStatus.UPLOADED -> "업로드 완료" to Color(0xFF4A8A3A)
         RecordingStatus.PROCESSING -> "분석 중…" to MaterialTheme.colorScheme.primary
         RecordingStatus.FAILED -> "실패 - 재시도 예정" to MaterialTheme.colorScheme.error
+        RecordingStatus.DONE -> "완료" to Color(0xFF4A8A3A)
         else -> rec.status to MaterialTheme.colorScheme.onSurfaceVariant
     }
+
     Card(
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Row(
-            Modifier.padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                Modifier.size(40.dp).clip(CircleShape)
-                    .background(color.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (rec.status == RecordingStatus.UPLOADING || rec.status == RecordingStatus.PROCESSING) {
-                    CircularProgressIndicator(
-                        Modifier.size(20.dp), strokeWidth = 2.dp, color = color,
+        Column(Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier.size(40.dp).clip(CircleShape)
+                        .background(statusColor.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (rec.status == RecordingStatus.UPLOADING || rec.status == RecordingStatus.PROCESSING) {
+                        CircularProgressIndicator(
+                            Modifier.size(20.dp), strokeWidth = 2.dp, color = statusColor,
+                        )
+                    } else Text("📞")
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        displayName(rec),
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
                     )
-                } else Text("📞")
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier.weight(1f)) {
+                    Text(statusLabel, style = MaterialTheme.typography.bodyMedium, color = statusColor)
+                }
                 Text(
-                    rec.counterpartNumber ?: rec.fileName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                )
-                Text(
-                    label,
+                    "${rec.durationSeconds / 60}분 ${rec.durationSeconds % 60}초",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = color,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            Text(
-                "${rec.durationSeconds / 60}분 ${rec.durationSeconds % 60}초",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+
+            // ===== 분류 버튼 =====
+            Spacer(Modifier.height(10.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                when (rec.category) {
+                    CallCategory.UNCLASSIFIED -> {
+                        ClassifyButton(
+                            label = "💼 업무",
+                            isPrimary = true,
+                            onClick = { onClassify(CallCategory.BUSINESS) },
+                            modifier = Modifier.weight(1f),
+                        )
+                        ClassifyButton(
+                            label = "👤 개인",
+                            isPrimary = false,
+                            onClick = { onClassify(CallCategory.PERSONAL) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    CallCategory.BUSINESS -> {
+                        ClassifyButton(
+                            label = "👤 개인으로 변경",
+                            isPrimary = false,
+                            onClick = { onClassify(CallCategory.PERSONAL) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                    CallCategory.PERSONAL -> {
+                        ClassifyButton(
+                            label = "💼 업무로 변경",
+                            isPrimary = false,
+                            onClick = { onClassify(CallCategory.BUSINESS) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClassifyButton(
+    label: String,
+    isPrimary: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (isPrimary) {
+        Button(onClick = onClick, modifier = modifier) {
+            Text(label, fontSize = 13.sp)
+        }
+    } else {
+        OutlinedButton(onClick = onClick, modifier = modifier) {
+            Text(label, fontSize = 13.sp)
         }
     }
 }

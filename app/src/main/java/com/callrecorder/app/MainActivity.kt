@@ -3,16 +3,22 @@ package com.callrecorder.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.callrecorder.app.ui.screens.*
+import com.callrecorder.app.ui.screens.AuthViewModel
+import com.callrecorder.app.ui.screens.CallDetailScreen
+import com.callrecorder.app.ui.screens.CallsScreen
+import com.callrecorder.app.ui.screens.LoginScreen
+import com.callrecorder.app.ui.screens.PermissionScreen
+import com.callrecorder.app.ui.screens.SettingsScreen
+import com.callrecorder.app.ui.screens.StoresScreen
 import com.callrecorder.app.ui.theme.CallRecorderTheme
-import android.util.Log
+import com.callrecorder.app.util.SafeLog
 import com.kakao.sdk.common.util.Utility
 
 class MainActivity : ComponentActivity() {
@@ -22,7 +28,7 @@ class MainActivity : ComponentActivity() {
 
         // 키 해시 출력 (카카오 콘솔 등록용 - 발표 후 삭제!)
         val keyHash = Utility.getKeyHash(this)
-        Log.d("KEY_HASH", "===== 카카오 키 해시: $keyHash =====")
+        SafeLog.d("KEY_HASH", "===== 카카오 키 해시: $keyHash =====")
 
         setContent {
             CallRecorderTheme { AppRoot() }

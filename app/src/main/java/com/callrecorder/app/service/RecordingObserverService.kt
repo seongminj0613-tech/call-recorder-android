@@ -17,6 +17,7 @@ import com.callrecorder.app.CallRecorderApp
 import com.callrecorder.app.MainActivity
 import com.callrecorder.app.data.local.RecordingEntity
 import com.callrecorder.app.data.local.RecordingStatus
+import com.callrecorder.app.util.SafeLog
 import com.callrecorder.app.worker.UploadWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -95,7 +96,7 @@ class RecordingObserverService : Service() {
                 )
                 if (id > 0) newCount++
             }
-            Log.i(TAG, "Detected ${found.size} files (new=$newCount), enqueuing upload")
+            SafeLog.i(TAG, "Detected ${found.size} files (new=$newCount), enqueuing upload")
             UploadWorker.enqueueOneShot(applicationContext)
         }
     }

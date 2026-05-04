@@ -162,7 +162,7 @@ class RecordingScanner(private val context: Context) {
                     ?.toLongOrNull() ?: 0L).div(1000).toInt()
             }
         } catch (e: Exception) {
-            Log.w(TAG, "metadata fail: ${file.name}", e)
+            SafeLog.w(TAG, "metadata fail: ${file.name}", e)
         }
         val mod = file.lastModified()
         return FoundRecording(
