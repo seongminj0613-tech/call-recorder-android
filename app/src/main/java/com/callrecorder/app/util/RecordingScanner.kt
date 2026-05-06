@@ -175,9 +175,32 @@ class RecordingScanner(private val context: Context) {
     }
 
     private fun parseNumberFromName(name: String): String? {
-        // 파일명에서 11자리 한국 휴대폰 번호 패턴 추출
-        return Regex("""(010[-.\s]?\d{3,4}[-.\s]?\d{4})""").find(name)
-            ?.value?.replace(Regex("""[-.\s]"""), "")
+        // "통화 녹음" prefix 제거 + 확장자 제거 + 날짜/시간 부분 제거
+        val cleaned = name
+            .removePrefix("통화 녹음 ")
+            .removePrefix("통화 녹음")
+            .substringBeforeLast(".m4a")
+            .substringBeforeLast(".mp3")
+            .substringBeforeLast(".amr")
+            .substringBeforeLast(".3gp")
+            .substringBeforeLast(".wav")
+            .substringBeforeLast(".aac")
+            .substringBeforeLast(".ogg")
+            .trim()
+
+        // 1순위: 휴대폰 번호 패턴 (010-1234-5678 또는 01012345678)
+        val phoneMatch = Regex("""(01[016789][-.\s]?\d{3,4}[-.\s]?\d{4})""").find(cleaned)
+        if (phoneMatch != null) {
+            return phoneMatch.value.replace(Regex("""[-.\s]"""), "")
+        }
+
+        // 2순위: 날짜/시간 prefix 제거 후 남은 텍스트 = 발신자 이름
+        // 예: "💕내애기💕_260504_171650" → "💕내애기💕"
+        // 예: "엄마_260503_212655" → "엄마"
+        val nameOnly = cleaned.substringBeforeLast("_2")  // _260504... 시작점
+            .takeIf { it.isNotBlank() }
+
+        return nameOnly
     }
 
     private fun MediaMetadataRetriever.use(block: (MediaMetadataRetriever) -> Unit) {

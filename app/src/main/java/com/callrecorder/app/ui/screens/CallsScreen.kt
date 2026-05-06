@@ -329,12 +329,12 @@ private fun CallRow(call: Call, onClick: () -> Unit) {
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text(
-                    call.counterpartNumber ?: "알 수 없음",
+                    call.callerNumber ?: "알 수 없음",
                     style = MaterialTheme.typography.titleMedium,
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    formatTime(call.callStartedAt),
+                    formatTime(call.createdAt ?: ""),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -343,7 +343,7 @@ private fun CallRow(call: Call, onClick: () -> Unit) {
                 StatusBadge(call.status)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    "${call.durationSeconds / 60}분",
+                    "${(call.duration ?: 0) / 60}분",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -374,7 +374,7 @@ private fun StatusBadge(status: String) {
     }
 }
 
-private fun formatTime(iso: String): String = try {
+private fun formatTime(iso: String?): String = if (iso == null) "" else try {
     val parser = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply {
         timeZone = TimeZone.getTimeZone("UTC")
     }

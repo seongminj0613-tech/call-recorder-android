@@ -28,6 +28,7 @@ class UploadWorker(
 
         setForeground(buildForegroundInfo("녹음 업로드 중..."))
 
+        // 모든 카테고리 업로드 (마스킹 정책으로 프라이버시 보호)
         val pending = repo.pendingUploads()
         if (pending.isEmpty()) return Result.success()
 

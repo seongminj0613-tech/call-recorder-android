@@ -68,6 +68,7 @@ class CallRepository(
                 callStartedAt = isoFormat(rec.callStartedAtMillis),
                 durationSeconds = rec.durationSeconds,
                 counterpartNumber = rec.counterpartNumber,
+                callerCategory = rec.category,                    // ← 추가: 안드 분류 정보 전송
             )
         )
 

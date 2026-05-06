@@ -55,7 +55,8 @@ data class UploadUrlRequest(
     @SerialName("mime_type") val mimeType: String,
     @SerialName("call_started_at") val callStartedAt: String,  // ISO8601
     @SerialName("duration_seconds") val durationSeconds: Int,
-    @SerialName("counterpart_number") val counterpartNumber: String? = null
+    @SerialName("counterpart_number") val counterpartNumber: String? = null,
+    @SerialName("caller_category") val callerCategory: String? = null
 )
 
 @Serializable
@@ -74,11 +75,17 @@ data class ProcessCallRequest(
 data class Call(
     val id: String,
     @SerialName("store_id") val storeId: String,
-    @SerialName("counterpart_number") val counterpartNumber: String? = null,
-    @SerialName("call_started_at") val callStartedAt: String,
-    @SerialName("duration_seconds") val durationSeconds: Int = 0,    // 안전장치
-    val status: String = "UNKNOWN",                                   // 안전장치
-    @SerialName("created_at") val createdAt: String? = null
+    @SerialName("caller_number") val callerNumber: String? = null,
+    @SerialName("caller_category") val callerCategory: String? = null,
+    val duration: Int? = null,
+    val status: String = "UNKNOWN",
+    @SerialName("created_at") val createdAt: String? = null,
+    val summary: String? = null,
+    val category: String? = null,
+    val sentiment: String? = null,
+    @SerialName("action_required") val actionRequired: Int? = null,
+    @SerialName("is_read") val isRead: Int? = null,
+    @SerialName("stt_result") val sttResult: String? = null,
 )
 
 @Serializable

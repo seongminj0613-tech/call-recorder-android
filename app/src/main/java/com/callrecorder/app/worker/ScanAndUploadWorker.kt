@@ -73,12 +73,13 @@ class ScanAndUploadWorker(
             )
         }
 
-        // 3) 업로드 (사용자가 명시적으로 BUSINESS로 분류한 것만)
-        // BUSINESS: 업무 통화로 명시 분류됨 → 업로드 OK
-        // UNCLASSIFIED: 사용자 분류 대기 → 업로드 보류 (안전 우선)
-        // PERSONAL: 개인 통화 → 자동 업로드 안 함
+        // 3) 업로드 (모든 카테고리)
+        // 안드와 웹 통합 정책: 모든 통화를 업로드하되 caller_category 함께 전송
+        // 개인정보 보호는 웹/안드 양쪽에서 마스킹으로 처리 (BUSINESS만 원본 표시)
         val allowedCategories = listOf(
-            CallCategory.BUSINESS
+            CallCategory.BUSINESS,
+            CallCategory.PERSONAL,
+            CallCategory.UNCLASSIFIED
         )
         val pending = callRepo.pendingUploadsByCategory(allowedCategories)
         android.util.Log.i(TAG, "📋 업로드 큐: ${pending.size}건")
