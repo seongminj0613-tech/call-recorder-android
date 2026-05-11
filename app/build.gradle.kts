@@ -62,6 +62,7 @@ android {
 dependencies {
     // Kotlin & Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
 
     // AndroidX Core
@@ -100,6 +101,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-auth-ktx")
     // implementation("com.google.firebase:firebase-crashlytics-ktx")  // 발표 후 추가 예정
 
     // Kakao Login
@@ -107,6 +109,11 @@ dependencies {
 
     // Coil (이미지)
     implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // Media3 ExoPlayer (음성 재생용)
+    implementation("androidx.media3:media3-exoplayer:1.2.1")
+    implementation("androidx.media3:media3-ui:1.2.1")
+    implementation("androidx.media3:media3-common:1.2.1")
 
     // Accompanist - Permissions
     implementation("com.google.accompanist:accompanist-permissions:0.32.0")

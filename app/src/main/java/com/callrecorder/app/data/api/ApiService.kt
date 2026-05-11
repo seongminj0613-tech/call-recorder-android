@@ -47,6 +47,14 @@ interface ApiService {
     @GET("calls/{id}")
     suspend fun getCall(@Path("id") callId: String): CallDetail
 
+    /**
+     * 음성 파일 재생용 presigned URL 발급.
+     * 백엔드 응답 예: {"url": "https://...s3..."}
+     * (실제 엔드포인트가 다르면 이 메서드만 수정하면 됨)
+     */
+    @GET("calls/{id}/audio")
+    suspend fun getAudioUrl(@Path("id") callId: String): AudioUrlResponse
+
     @GET("summaries/{id}")
     suspend fun getSummary(@Path("id") callId: String): Summary
 }

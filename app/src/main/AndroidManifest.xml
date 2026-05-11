@@ -13,6 +13,9 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <!-- 연락처 접근 (수신자 이름 자동 매칭용) -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
     <!-- 포그라운드 서비스 (업로드 진행 중) -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
@@ -37,6 +40,17 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CallRecorder"
         tools:targetApi="31">
+
+        <!-- WorkManager 직접 초기화 (Configuration.Provider) - 기본 InitializationProvider 제거 -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
 
         <!-- 메인 액티비티 -->
         <activity

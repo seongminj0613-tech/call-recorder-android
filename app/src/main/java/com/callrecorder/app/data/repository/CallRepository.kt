@@ -105,6 +105,11 @@ class CallRepository(
         api.getCall(callId)
     }
 
+    /** 음성 재생용 presigned URL 가져오기. 백엔드가 안 줄 수도 있어 nullable. */
+    suspend fun getAudioUrl(callId: String): Result<String?> = runCatching {
+        api.getAudioUrl(callId).resolved
+    }
+
     suspend fun getSummary(callId: String): Result<Summary> = runCatching {
         api.getSummary(callId)
     }
